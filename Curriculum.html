@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>វិទ្យាស្ថានជាតិពហុបច្ចេកទេសអង្គរ - NPIA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --npia-blue: #1e3a8a;
+            --npia-gold: #fbbf24;
+        }
+        body { 
+            font-family: 'Kantumruy Pro', sans-serif; 
+            background-color: #f8fafc;
+        }
+        .lesson-card {
+            transition: all 0.3s ease;
+            border-left: 6px solid var(--npia-blue);
+        }
+        .lesson-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .glass-header { 
+            background: rgba(255, 255, 255, 0.95); 
+            backdrop-filter: blur(10px); 
+            border-bottom: 3px solid var(--npia-gold);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 10px;
+        }
+        /* Modal Style */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <!-- Password Modal -->
+    <div id="passwordModal" class="modal-overlay items-center justify-center p-4">
+        <div class="bg-white rounded-[2rem] p-8 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in duration-300">
+            <h3 class="text-xl font-black text-blue-950 mb-4 text-center">ផ្ទៀងផ្ទាត់សិទ្ធិគ្រូ</h3>
+            <p class="text-slate-500 text-sm mb-6 text-center">សូមបញ្ចូលពាក្យសម្ងាត់ដើម្បីចូលទៅកាន់របៀបគ្រប់គ្រង</p>
+            <input type="password" id="pwdInput" class="w-full p-4 bg-slate-100 border-none rounded-2xl mb-4 text-center text-lg tracking-widest outline-none focus:ring-2 ring-blue-500" placeholder="••••">
+            <div class="flex gap-3">
+                <button onclick="closeModal('passwordModal')" class="flex-1 py-3 bg-slate-100 text-slate-500 font-bold rounded-xl">បោះបង់</button>
+                <button onclick="checkPassword()" class="flex-1 py-3 bg-blue-900 text-white font-bold rounded-xl shadow-lg hover:bg-blue-800">យល់ព្រម</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submit Assignment Modal -->
+    <div id="submitModal" class="modal-overlay items-center justify-center p-4">
+        <div class="bg-white rounded-[2rem] p-8 w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-300">
+            <h3 class="text-xl font-black text-blue-950 mb-4 text-center">ប្រគល់កិច្ចការផ្ទះ</h3>
+            <p id="submitInfo" class="text-slate-500 text-sm mb-6 text-center italic"></p>
+            
+            <input type="hidden" id="submitAssignmentId">
+            <input type="hidden" id="submitLessonId">
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase ml-2 mb-1">អត្តលេខសិស្ស (Student ID)</label>
+                    <input type="text" id="studentId" class="w-full p-4 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 ring-blue-500" placeholder="បញ្ចូលអត្តលេខ (ឧ. ID-001)">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase ml-2 mb-1">ឈ្មោះសិស្ស</label>
+                    <input type="text" id="studentName" class="w-full p-4 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 ring-blue-500" placeholder="បញ្ជូលឈ្មោះរបស់អ្នក">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase ml-2 mb-1">Link កិច្ចការ (Google Drive/GitHub/...)</label>
+                    <input type="url" id="assignmentUrl" class="w-full p-4 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 ring-blue-500" placeholder="https://...">
+                </div>
+            </div>
+
+            <div class="flex gap-3 mt-8">
+                <button onclick="closeModal('submitModal')" class="flex-1 py-3 bg-slate-100 text-slate-500 font-bold rounded-xl">បោះបង់</button>
+                <button onclick="processSubmission()" class="flex-1 py-3 bg-blue-900 text-white font-bold rounded-xl shadow-lg hover:bg-blue-800">ផ្ញើកិច្ចការ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="glass-header sticky top-0 z-50 px-4 py-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <img src="https://npia.edu.kh/wp-content/uploads/2021/04/Logo-NPIA-Original-1.png" alt="NPIA" class="h-14 w-auto">
+                <div>
+                    <h1 class="text-xl font-black text-blue-900 leading-none">វិទ្យាស្ថានជាតិពហុបច្ចេកទេសអង្គរ</h1>
+                    <span class="text-[11px] font-bold text-blue-600 uppercase tracking-wider">National Polytechnic Institute of Angkor</span>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button id="viewToggle" onclick="handleToggleRequest()" class="px-4 py-2 bg-blue-900 text-white rounded-xl text-xs font-bold shadow-lg hover:bg-blue-800 transition-all">របៀបគ្រូបង្រៀន</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        
+        <!-- Teacher Dashboard -->
+        <section id="teacherSection" class="hidden mb-12 animate-fade-in">
+            <div class="bg-white rounded-[2rem] p-6 shadow-xl border border-blue-50">
+                <h2 class="text-xl font-black text-blue-950 mb-6 flex items-center gap-2">
+                    <span class="bg-blue-100 p-2 rounded-lg text-lg">📝</span> គ្រប់គ្រងមាតិកាមេរៀន
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="space-y-4">
+                        <label class="block text-xs font-bold text-slate-500 uppercase">ប្រភេទមាតិកា</label>
+                        <select id="dataType" onchange="toggleInputs()" class="w-full p-4 bg-slate-50 border rounded-2xl focus:ring-2 ring-blue-500 outline-none font-bold">
+                            <option value="lesson">📚 មេរៀនថ្មី</option>
+                            <option value="assignment">📂 កិច្ចការផ្ទះ</option>
+                            <option value="score">🏆 បញ្ចូលពិន្ទុ</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-4 md:col-span-2">
+                        <label class="block text-xs font-bold text-slate-500 uppercase">ចំណងជើង / ឈ្មោះ</label>
+                        <input type="text" id="dataTitle" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none" placeholder="បញ្ចូលចំណងជើងមេរៀន ឬ ឈ្មោះសិស្ស...">
+                    </div>
+
+                    <div class="space-y-4 md:col-span-1" id="parentLessonGroup">
+                        <label class="block text-xs font-bold text-slate-500 uppercase">ស្ថិតក្នុងមេរៀន</label>
+                        <select id="parentLesson" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none font-medium"></select>
+                    </div>
+
+                    <div class="space-y-4 md:col-span-1" id="scoreGroup">
+                        <label class="block text-xs font-bold text-slate-500 uppercase">ពិន្ទុ (០-១០០)</label>
+                        <input type="number" id="dataScore" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none" placeholder="100">
+                    </div>
+
+                    <div class="space-y-4 md:col-span-1" id="linkGroup">
+                        <label class="block text-xs font-bold text-slate-500 uppercase">Link ឯកសារ (URL)</label>
+                        <input type="url" id="dataLink" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none" placeholder="https://...">
+                    </div>
+
+                    <div class="md:col-span-3 flex justify-end gap-3 mt-4">
+                        <button onclick="clearForm()" class="px-6 py-3 bg-slate-100 text-slate-500 font-bold rounded-xl">សម្អាត</button>
+                        <button onclick="saveData()" class="px-10 py-3 bg-blue-900 text-white font-bold rounded-xl shadow-lg">រក្សាទុក</button>
+                    </div>
+                </div>
+
+                <!-- New Delete Section -->
+                <div id="manageList" class="mt-8 pt-8 border-t border-blue-100">
+                    <h3 class="text-lg font-black text-red-500 mb-4 flex items-center gap-2">
+                        <span class="bg-red-50 p-2 rounded-lg text-lg">🗑️</span> តារាងលុបមេរៀន (Manage & Delete)
+                    </h3>
+                    <div class="bg-slate-50 rounded-2xl p-4 max-h-60 overflow-y-auto custom-scrollbar">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="text-xs font-bold text-slate-400 uppercase border-b border-slate-200">
+                                    <th class="pb-2">ឈ្មោះមេរៀន/កិច្ចការ</th>
+                                    <th class="pb-2">ប្រភេទ</th>
+                                    <th class="pb-2 text-right">សកម្មភាព</th>
+                                </tr>
+                            </thead>
+                            <tbody id="manageTableBody" class="text-sm">
+                                <!-- Items will be injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Student View Header -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+            <div>
+                <h2 class="text-3xl font-black text-blue-950 uppercase tracking-tight leading-tight">មាតិកាមេរៀន</h2>
+                <p class="text-blue-600 font-bold text-sm tracking-wider uppercase opacity-70">Lesson Content</p>
+            </div>
+            <div class="relative w-full md:w-80">
+                <input type="text" id="search" onkeyup="render()" class="w-full p-4 pl-12 rounded-2xl border-none shadow-md outline-none focus:ring-2 ring-blue-500" placeholder="ស្វែងរកមេរៀន...">
+                <span class="absolute left-4 top-4 opacity-30 text-xl">🔍</span>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div id="lessonContainer" class="grid grid-cols-1 gap-8">
+            <!-- Content injected here -->
+        </div>
+
+    </main>
+
+    <script>
+        const TEACHER_PASSWORD = "1234";
+
+        let lessons = JSON.parse(localStorage.getItem('npia_lessons')) || [];
+        let subData = JSON.parse(localStorage.getItem('npia_subdata')) || []; 
+        let isTeacher = false;
+
+        function handleToggleRequest() {
+            if (isTeacher) {
+                toggleView();
+            } else {
+                document.getElementById('passwordModal').style.display = 'flex';
+                document.getElementById('pwdInput').focus();
+            }
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+            if(id === 'passwordModal') document.getElementById('pwdInput').value = '';
+        }
+
+        function checkPassword() {
+            if (document.getElementById('pwdInput').value === TEACHER_PASSWORD) {
+                closeModal('passwordModal');
+                toggleView();
+            } else {
+                alert("ពាក្យសម្ងាត់មិនត្រឹមត្រូវទេ!");
+                document.getElementById('pwdInput').value = '';
+            }
+        }
+
+        function toggleView() {
+            isTeacher = !isTeacher;
+            document.getElementById('teacherSection').classList.toggle('hidden');
+            document.getElementById('viewToggle').innerText = isTeacher ? "របៀបសិស្ស" : "របៀបគ្រូបង្រៀន";
+            document.getElementById('viewToggle').className = isTeacher ? 
+                "px-4 py-2 bg-amber-500 text-white rounded-xl text-xs font-bold shadow-lg" : 
+                "px-4 py-2 bg-blue-900 text-white rounded-xl text-xs font-bold shadow-lg";
+            
+            if(isTeacher) {
+                updateParentDropdown();
+                renderTeacherList();
+            }
+            render();
+        }
+
+        function toggleInputs() {
+            const type = document.getElementById('dataType').value;
+            document.getElementById('parentLessonGroup').style.display = (type === 'lesson') ? 'none' : 'block';
+            document.getElementById('scoreGroup').style.display = (type === 'score') ? 'block' : 'none';
+            document.getElementById('linkGroup').style.display = (type === 'score') ? 'none' : 'block';
+        }
+
+        function updateParentDropdown() {
+            const select = document.getElementById('parentLesson');
+            select.innerHTML = lessons.length === 0 ? `<option value="">-- សូមបង្កើតមេរៀនសិន --</option>` : 
+                               lessons.map(l => `<option value="${l.id}">${l.title}</option>`).join('');
+        }
+
+        function saveData() {
+            const type = document.getElementById('dataType').value;
+            const title = document.getElementById('dataTitle').value.trim();
+            const link = document.getElementById('dataLink').value.trim();
+            const parentId = document.getElementById('parentLesson').value;
+            const score = document.getElementById('dataScore').value;
+
+            if (!title) return alert("សូមបញ្ចូលចំណងជើង!");
+
+            if (type === 'lesson') {
+                lessons.push({ id: Date.now(), title, link: link || '#', date: new Date().toLocaleDateString('km-KH') });
+                localStorage.setItem('npia_lessons', JSON.stringify(lessons));
+            } else {
+                if (!parentId) return alert("សូមជ្រើសរើសមេរៀនមេ!");
+                subData.push({ id: Date.now(), parentId: parseInt(parentId), type, title, link: link || '#', score, date: new Date().toLocaleDateString('km-KH') });
+                localStorage.setItem('npia_subdata', JSON.stringify(subData));
+            }
+            clearForm(); 
+            updateParentDropdown(); 
+            renderTeacherList(); 
+            render();
+        }
+
+        function deleteItem(id, listType) {
+            if (!confirm("តើអ្នកប្រាកដថាចង់លុប? បើលុបមេរៀន ទិន្នន័យកិច្ចការក្នុងនោះក៏នឹងបាត់ដែរ។")) return;
+            if (listType === 'lesson') {
+                lessons = lessons.filter(l => l.id !== id);
+                subData = subData.filter(s => s.parentId !== id);
+                localStorage.setItem('npia_lessons', JSON.stringify(lessons));
+            } else {
+                subData = subData.filter(s => s.id !== id);
+            }
+            localStorage.setItem('npia_subdata', JSON.stringify(subData));
+            renderTeacherList();
+            render();
+        }
+
+        function renderTeacherList() {
+            const tbody = document.getElementById('manageTableBody');
+            tbody.innerHTML = '';
+
+            // Combine lessons and subData for the list, or just show lessons and expand?
+            // Let's list everything flat for easy deletion
+            
+            // 1. Lessons
+            lessons.forEach(l => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-slate-100 hover:bg-white transition-colors";
+                tr.innerHTML = `
+                    <td class="py-3 font-bold text-blue-900">${l.title}</td>
+                    <td class="py-3"><span class="bg-blue-100 text-blue-800 text-[10px] px-2 py-1 rounded-md font-bold">មេរៀនមេ</span></td>
+                    <td class="py-3 text-right">
+                        <button onclick="deleteItem(${l.id}, 'lesson')" class="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all">លុបចោល</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // 2. Sub Items (Assignments/Scores)
+            subData.forEach(s => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-slate-100 hover:bg-white transition-colors";
+                const typeLabel = s.type === 'assignment' ? '<span class="bg-amber-100 text-amber-800 text-[10px] px-2 py-1 rounded-md font-bold">កិច្ចការ</span>' : '<span class="bg-green-100 text-green-800 text-[10px] px-2 py-1 rounded-md font-bold">ពិន្ទុ</span>';
+                tr.innerHTML = `
+                    <td class="py-3 pl-4 text-slate-600">↳ ${s.title}</td>
+                    <td class="py-3">${typeLabel}</td>
+                    <td class="py-3 text-right">
+                        <button onclick="deleteItem(${s.id}, 'sub')" class="text-red-400 hover:text-red-600 text-xs font-bold underline">លុប</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            if(lessons.length === 0 && subData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-slate-400 italic">មិនទាន់មានទិន្នន័យ</td></tr>';
+            }
+        }
+
+        function openSubmitModal(lessonId, assignmentId, assignmentTitle) {
+            document.getElementById('submitModal').style.display = 'flex';
+            document.getElementById('submitInfo').innerText = `កិច្ចការ៖ ${assignmentTitle}`;
+            document.getElementById('submitLessonId').value = lessonId;
+            document.getElementById('submitAssignmentId').value = assignmentId;
+        }
+
+        function processSubmission() {
+            const sid = document.getElementById('studentId').value.trim();
+            const name = document.getElementById('studentName').value.trim();
+            const url = document.getElementById('assignmentUrl').value.trim();
+            const parentId = document.getElementById('submitLessonId').value;
+            const assignTitle = document.getElementById('submitInfo').innerText;
+
+            if(!name || !url || !sid) return alert("សូមបំពេញ អត្តលេខ, ឈ្មោះ និង Link ឱ្យបានត្រឹមត្រូវ!");
+
+            // In a real app, this sends to server. Here we save to subData as a 'score' item (pending)
+            subData.push({
+                id: Date.now(),
+                parentId: parseInt(parentId),
+                type: 'score',
+                title: `[ID:${sid}] ${name} (ប្រគល់៖ ${assignTitle.replace('កិច្ចការ៖ ', '')})`,
+                link: url,
+                score: 'រង់ចាំពិនិត្យ',
+                date: new Date().toLocaleDateString('km-KH')
+            });
+            
+            localStorage.setItem('npia_subdata', JSON.stringify(subData));
+            alert("កិច្ចការរបស់អ្នកត្រូវបានផ្ញើជូនគ្រូហើយ!");
+            closeModal('submitModal');
+            document.getElementById('studentId').value = '';
+            document.getElementById('studentName').value = '';
+            document.getElementById('assignmentUrl').value = '';
+            render();
+        }
+
+        function clearForm() {
+            document.getElementById('dataTitle').value = '';
+            document.getElementById('dataLink').value = '';
+            document.getElementById('dataScore').value = '';
+        }
+
+        function render() {
+            const container = document.getElementById('lessonContainer');
+            const search = document.getElementById('search').value.toLowerCase();
+            container.innerHTML = "";
+
+            const filteredLessons = lessons.filter(l => l.title.toLowerCase().includes(search));
+
+            if (filteredLessons.length === 0) {
+                container.innerHTML = `<div class="text-center py-24 bg-white rounded-[3rem] border-4 border-dashed border-slate-100"><p class="text-slate-300 font-black text-2xl uppercase">មិនទាន់មានមេរៀន</p></div>`;
+                return;
+            }
+
+            filteredLessons.forEach(lesson => {
+                const homeworks = subData.filter(s => s.parentId === lesson.id && s.type === 'assignment');
+                const scores = subData.filter(s => s.parentId === lesson.id && s.type === 'score');
+
+                const card = document.createElement('div');
+                card.className = "lesson-card bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-50 flex flex-col gap-6";
+                card.innerHTML = `
+                    <div class="flex-1">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-[10px] font-black bg-blue-900 text-white px-3 py-1 rounded-full uppercase">មេរៀន</span>
+                                    <span class="text-[10px] font-bold text-slate-400 italic">${lesson.date}</span>
+                                </div>
+                                <h3 class="text-2xl font-black text-blue-950 mt-3">${lesson.title}</h3>
+                            </div>
+                            ${isTeacher ? `<button onclick="deleteItem(${lesson.id}, 'lesson')" class="p-3 text-red-400 hover:text-red-600 bg-red-50 rounded-xl hover:bg-red-100 transition-all">🗑️</button>` : ''}
+                        </div>
+                        <div class="mt-4"><a href="${lesson.link}" target="_blank" class="px-6 py-2.5 bg-slate-800 text-white rounded-xl text-xs font-bold shadow-md hover:bg-black">📖 បើកមើលឯកសារមេរៀន</a></div>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8 pt-8 border-t border-slate-100">
+                            <div class="bg-blue-50/50 rounded-3xl p-5 border border-blue-100/50">
+                                <h4 class="text-sm font-black text-blue-900 mb-4">📂 កិច្ចការផ្ទះ (${homeworks.length})</h4>
+                                <div class="space-y-3">${homeworks.map(h => `
+                                    <div class="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm">
+                                        <div class="flex-1 pr-2"><p class="text-xs font-bold text-slate-700 truncate">${h.title}</p></div>
+                                        <div class="flex items-center gap-2">
+                                            <a href="${h.link}" target="_blank" class="px-3 py-1.5 bg-slate-100 text-slate-600 text-[9px] font-bold rounded-lg">មើល</a>
+                                            <button onclick="openSubmitModal(${lesson.id}, ${h.id}, '${h.title}')" class="px-3 py-1.5 bg-blue-100 text-blue-700 text-[9px] font-black rounded-lg hover:bg-blue-200">ប្រគល់កិច្ចការ</button>
+                                            ${isTeacher ? `<button onclick="deleteItem(${h.id}, 'sub')" class="text-red-300 ml-1 hover:text-red-500">✕</button>` : ''}
+                                        </div>
+                                    </div>`).join('') || '<p class="text-[10px] text-slate-400 italic text-center">មិនទាន់មានកិច្ចការ</p>'}</div>
+                            </div>
+                            <div class="bg-amber-50/50 rounded-3xl p-5 border border-amber-100/50">
+                                <h4 class="text-sm font-black text-amber-700 mb-4">🏆 លទ្ធផល/ពិន្ទុសិស្ស (${scores.length})</h4>
+                                <div class="space-y-3">${scores.map(s => `
+                                    <div class="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm">
+                                        <div class="flex-1 pr-2">
+                                            <p class="text-xs font-black text-slate-700 truncate">${s.title}</p>
+                                            ${s.link !== '#' ? `<a href="${s.link}" target="_blank" class="text-[8px] text-blue-500 underline">មើលកិច្ចការដែលផ្ញើ</a>` : ''}
+                                        </div>
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-sm font-black text-amber-600">${s.score}</span>
+                                            ${isTeacher ? `<button onclick="deleteItem(${s.id}, 'sub')" class="text-red-300 hover:text-red-500">✕</button>` : ''}
+                                        </div>
+                                    </div>`).join('') || '<p class="text-[10px] text-slate-400 italic text-center">មិនទាន់មានពិន្ទុ</p>'}</div>
+                            </div>
+                        </div>
+                    </div>`;
+                container.appendChild(card);
+            });
+        }
+        toggleInputs(); render();
+    </script>
+</body>
+</html>
